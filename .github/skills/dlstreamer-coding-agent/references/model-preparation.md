@@ -224,6 +224,117 @@ optimum-cli export openvino \
 OpenVINO Model Zoo and related models are deprecated. Please discourage users from accessing this repository.
 Recommend a model from HuggingFace Hub instead. 
 
+### 7. ONNX Models (direct conversion)
+
+**When to use:** User provides an `.onnx` model file or URL.
+
+**Conversion via `ovc` (one-step):**
+
+```python
+import subprocess
+
+# Download if needed
+subprocess.run(["wget", "-O", "model.onnx", model_url], check=True)
+
+# Convert ONNX → OpenVINO IR
+subprocess.run([
+    "ovc", "model.onnx",
+    "--output_model", "models/model.xml",
+    "--compress_to_fp16",    # optional: FP16 for GPU
+], check=True)
+model_file = "models/model.xml"
+```
+
+**Requirements:** `openvino` (provides the `ovc` CLI tool)
+
+### 8. TensorFlow Models (SavedModel, Frozen Graph, Keras)
+
+**When to use:** User provides a TensorFlow SavedModel directory, frozen graph (`.pb`),
+or Keras model (`.h5`, `.keras`).
+
+**Conversion via `ovc` (one-step):**
+
+```python
+import subprocess
+
+# SavedModel directory → OpenVINO IR
+subprocess.run([
+    "ovc", "saved_model_dir",
+    "--output_model", "models/model.xml",
+], check=True)
+
+# Frozen graph (.pb) → OpenVINO IR
+subprocess.run([
+    "ovc", "frozen_model.pb",
+    "--output_model", "models/model.xml",
+], check=True)
+
+# Keras (.h5 or .keras) → OpenVINO IR
+subprocess.run([
+    "ovc", "model.h5",
+    "--output_model", "models/model.xml",
+], check=True)
+```
+
+**Requirements:** `openvino`, `tensorflow` (needed only if model uses custom ops)
+
+### 9. TensorFlow Lite Models (.tflite)
+
+**When to use:** User provides a TensorFlow Lite model (common in mobile/edge deployments).
+
+**Conversion via `ovc` (one-step):**
+
+```python
+import subprocess
+
+subprocess.run([
+    "ovc", "model.tflite",
+    "--output_model", "models/model.xml",
+], check=True)
+model_file = "models/model.xml"
+```
+
+**Requirements:** `openvino`
+
+### 10. Generic PyTorch Models (.pt, .pth — non-Ultralytics)
+
+**When to use:** User provides a raw PyTorch model that is NOT an Ultralytics YOLO model
+(e.g., a custom-trained ResNet, EfficientNet, or other `torch.nn.Module`).
+
+**Conversion via `torch.onnx.export()` → `ovc` (two-step):**
+
+```python
+import torch
+import subprocess
+
+# Step 1: Load PyTorch model and export to ONNX
+model = torch.load("model.pt", map_location="cpu")
+model.eval()
+dummy_input = torch.randn(1, 3, 224, 224)  # adjust shape to model's expected input
+torch.onnx.export(
+    model, dummy_input, "model.onnx",
+    opset_version=14,
+    input_names=["input"],
+    output_names=["output"],
+    dynamic_axes={"input": {0: "batch"}, "output": {0: "batch"}},
+)
+
+# Step 2: ONNX → OpenVINO IR
+subprocess.run([
+    "ovc", "model.onnx",
+    "--output_model", "models/model.xml",
+], check=True)
+model_file = "models/model.xml"
+```
+
+**Important:** Generic PyTorch export requires knowing the model's input shape and class.
+If the user provides only a `.pt` file without model architecture code, ask them for:
+- The model class / architecture (e.g., `torchvision.models.resnet50`)
+- The expected input shape (e.g., `1x3x224x224`)
+- Whether the `.pt` file contains the full model or only state_dict weights
+
+**Requirements:** `torch`, `openvino`
+
 
 ## Model-Proc Files
 
