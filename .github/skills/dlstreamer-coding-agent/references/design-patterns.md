@@ -362,6 +362,17 @@ for camera in cameras:
 
 ---
 
+## Pattern 13: Separate Model Download Script
+
+When an application uses models from Ultralytics, HuggingFace Transformers, PaddlePaddle,
+or other frameworks with long list of run-time dependencies, create a **separate `download_models.py`**
+script that handles all model download and export. Users run it once before starting the pipeline application.
+
+In addition, model export dependencies may clash with model inference dependencies which further
+justifies splitting these two phases.
+
+---
+
 ## Composing Patterns
 
 When building a new app, identify which patterns apply and compose them:
@@ -375,6 +386,7 @@ When building a new app, identify which patterns apply and compose them:
 | Custom analytics + chunked storage | 1 + 4 + 6 + 7 |
 | Detection + VLM on selected frames | 1 + 4 + 5 + 6 + 8 + 9 + 11 |
 | Multi-camera with per-camera AI | 12 + (any above per camera) |
-| Detection + custom model (e.g. OCR) | 1 + 4 + 6 + 11 |
+| Detection + OCR (license plates, text) | 1 + 4 + 10 + 11 + 13 |
+| Detection + custom model (non-OCR) | 1 + 4 + 6 + 11 |
 
 ---

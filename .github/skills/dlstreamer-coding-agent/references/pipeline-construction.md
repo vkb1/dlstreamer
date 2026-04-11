@@ -5,7 +5,7 @@ This reference covers how to build DLStreamer command line pipelines or Python a
 ## DLStreamer GStreamer Elements
 
 This section lists elements commonly used in DLStreamer pipelines. 
-For full list of DLStreamer elements see also `/home/tjanczak/dlstreamer/docs/user-guide/elements`.
+For full list of DLStreamer elements see also `../../../../docs/user-guide/elements/`.
 
 ### Source Elements
 
@@ -14,6 +14,7 @@ For full list of DLStreamer elements see also `/home/tjanczak/dlstreamer/docs/us
 | `filesrc` | Read video from local file | `location=<path>` |
 | `rtspsrc` | Read from RTSP camera stream | `location=<rtsp://url>` |
 | `urisourcebin` | Auto-detect source type | `buffer-size=4096 uri=<url>` |
+| `gvafpsthrottle` | Limit input frame rate (typically used with filesrc) | `target-fps=30` |
 
 ### Decode
 
@@ -30,17 +31,16 @@ For full list of DLStreamer elements see also `/home/tjanczak/dlstreamer/docs/us
 | `videoscale` | Resolution scaling only | |
 | `videorate` | Frame rate adjustment | |
 | `vapostproc` | VA-API hardware post-processing | Use before `video/x-raw(memory:VAMemory)` caps |
-| `gvafpsthrottle` | Limit input frame rate | `target-fps=30` |
 
 ### AI Inference (DLStreamer-specific)
 
 | Element | Purpose | Model Types | Key Properties |
 |---------|---------|-------------|----------------|
 | `gvadetect` | Object detection | YOLO, SSD, RT-DETR, D-FINE | `model`, `device`, `batch-size`, `threshold` |
-| `gvaclassify` | Classification & OCR | ResNet, EfficientNet, CLIP, ViT, PaddleOCR | `model`, `model-proc`, `device`, `batch-size` |
+| `gvaclassify` | Classification & OCR | ResNet, EfficientNet, CLIP, ViT, PaddleOCR | `model`, `device`, `batch-size` |
 | `gvagenai` | VLM / GenAI inference | MiniCPM-V, Qwen2.5-VL, InternVL, SmolVLM | `model-path`, `device`, `prompt`, `generation-config`, `frame-rate`, `chunk-size` |
 
-> **See Rule 3 above** for guidance on choosing the correct element for each model type.
+> **See Rule 3 below** for guidance on choosing the correct element for each model type.
 
 ### Tracking
 
@@ -90,28 +90,34 @@ For full list of DLStreamer elements see also `/home/tjanczak/dlstreamer/docs/us
 If a user pipeline requires custom processing, add new Python GStreamer elements in:  
 - `plugins/python/<element_name>.py`
 
-Do not use 'gvapython' as it is deprecated. 
+For new development, prefer custom Python GStreamer elements in `plugins/python/` over `gvapython`.
 
 ## Common Pipeline Patterns
 
-### Pattern 1: Detect → Watermark → Display
+### Pattern 1: Decode → Detect → Watermark → Display
 
 ```
 filesrc location=video.mp4 ! decodebin3 !
-gvadetect model=model.xml device=GPU batch-size=1 ! queue !
+gvadetect model=model.xml device=GPU batch-size=4 ! queue !
 gvawatermark ! videoconvertscale ! autovideosink
 ```
 
-### Pattern 2: Detect → Classify → Encode → Save
+### Pattern 2: Decode → Detect → Classify → Encode → Save
 
 ```
 filesrc location=video.mp4 ! decodebin3 !
 gvadetect model=detect.xml device=GPU batch-size=4 ! queue !
 gvaclassify model=classify.xml device=GPU batch-size=4 ! queue !
 gvafpscounter ! gvawatermark !
+gvametaconvert ! gvametapublish file-format=json-lines file-path=results.jsonl !
 videoconvert ! vah264enc ! h264parse ! mp4mux !
 filesink location=output.mp4
 ```
+
+> **Multi-device tip:** Inference elements can use different devices. For example, run
+> heavyweight detection on GPU and lightweight OCR/classification on NPU:
+> `gvadetect ... device=GPU` → `gvaclassify ... device=NPU`. This balances load and
+> avoids GPU contention.
 
 ### Pattern 3: VLM Alerting with JSON + Video Output
 
@@ -200,14 +206,15 @@ Choose the correct DLStreamer inference element based on model type:
 
 | Model Type | Element | Examples |
 |------------|---------|----------|
-| Object detection | `gvadetect` | YOLOv8/v11, SSD, RT-DETR, D-FINE |
+| Object detection | `gvadetect` | YOLO, SSD, RT-DETR, D-FINE |
 | Classification / OCR | `gvaclassify` | ResNet, EfficientNet, CLIP, ViT, PaddleOCR |
 | Vision-Language Models | `gvagenai` | MiniCPM-V, Qwen2.5-VL, InternVL, SmolVLM |
 
-Use `gvaclassify` for OCR models (e.g. PaddleOCR text recognition) when the model's
-input/output can be described by a model-proc file. Only fall back to a custom OpenVINO
-Python element (Pattern 6) when the model requires pre/post-processing that cannot be
-expressed through model-proc.
+Use `gvaclassify` for OCR models (e.g. PaddleOCR text recognition) and classification
+models. DLStreamer handles pre/post-processing automatically via model metadata —
+no model-proc files are needed (model-proc is deprecated). Only fall back to a custom
+Python element (Pattern 6 in Design Patterns) when the model requires custom
+pre/post-processing that DLStreamer cannot handle automatically.
 
 ### Rule 4 — Use queue element after Inference Elements
 

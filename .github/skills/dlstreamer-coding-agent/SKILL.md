@@ -50,7 +50,6 @@ Before generating code, read the relevant existing samples to understand establi
 | onvif_cameras_discovery | Multi-camera RTSP, ONVIF discovery, subprocess orchestration | `samples/gstreamer/python/onvif_cameras_discovery/` |
 | draw_face_attributes | Detect → multi-classify chain, custom tensor post-processing in pad probe callback | `samples/gstreamer/python/draw_face_attributes/` |
 | coexistence | DL Streamer + DeepStream coexistence, Docker orchestration, multi-framework LPR | `samples/gstreamer/python/coexistence/` |
-
 ## Reference Command Line Samples
 
 Before generating code, read the relevant existing samples to understand established conventions:

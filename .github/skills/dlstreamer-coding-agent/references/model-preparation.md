@@ -56,7 +56,28 @@ model_file = f"{path}/yoloe-26s-seg.xml"
 
 Source: `samples/gstreamer/python/prompted_detection/prompted_detection.py`
 
-### 2. HuggingFace Transformer Models (classification / VLM)
+### 2. HuggingFace Ultralytics Models
+
+If an Ultralytics model is located on the HuggingFace hub, download it first to the local disk and
+then use the Ultralytics model exporter as described in section #1.
+
+> **IMPORTANT:** Do not assume `.pt` file names (e.g. `best.pt`, `model.pt`). HuggingFace repos
+> use varied naming conventions. Always check the actual files in the repo's "Files" tab on
+> huggingface.co before writing the download script.
+
+```python
+from huggingface_hub import hf_hub_download
+
+model_path = hf_hub_download(
+    repo_id="arnabdhar/YOLOv8-Face-Detection",
+    filename="model.pt",                  # verify actual filename in HF repo!
+    local_dir=local_models_dir,
+    )
+```
+
+Source: `samples/gstreamer/python/face_detection_and_classification/face_detection_and_classification.py`
+
+### 3. HuggingFace Transformer Models (classification / VLM)
 
 **When to use:** User asks for image classification, age/gender/emotion detection, or
 any HuggingFace `transformers` model.
@@ -117,7 +138,38 @@ Source: `samples/gstreamer/python/smart_nvr/smart_nvr.py`
 | `text-generation` | Language models |
 | `automatic-speech-recognition` | Audio transcription (Whisper) |
 
-### 3. PaddlePaddle Models (OCR, detection, segmentation)
+### 4. Vision-Language Models (VLM) for gvagenai
+
+**When to use:** User asks for VLM-based alerting, scene description, or image-text inference.
+
+VLM models must be exported with the `image-text-to-text` task:
+
+```bash
+optimum-cli export openvino \
+    --model <model_id> \
+    --task image-text-to-text \
+    --trust-remote-code \
+    --weight-format int4 \
+    <output_dir>
+```
+
+```python
+import subprocess
+subprocess.run([
+    "optimum-cli", "export", "openvino",
+    "--model", model_id,                 # e.g. "OpenGVLab/InternVL3_5-2B"
+    "--task", "image-text-to-text",
+    "--trust-remote-code",
+    str(output_dir),
+], check=True)
+```
+
+Source: `samples/gstreamer/python/vlm_alerts/vlm_alerts.py`
+
+Recommended small models for edge: `OpenGVLab/InternVL3_5-2B`, `openbmb/MiniCPM-V-4_5`,
+`Qwen/Qwen2.5-VL-3B-Instruct`, `HuggingFaceTB/SmolVLM2-2.2B-Instruct`.
+
+### 5. PaddlePaddle OCR Models
 
 **When to use:** User asks for OCR (PaddleOCR), or any PaddlePaddle model from HuggingFace.
 
@@ -219,7 +271,7 @@ optimum-cli export openvino \
     whisper-base-ov
 ```
 
-### 6. OpenVINO Model Zoo / Open Model Zoo Models
+### 7. OpenVINO Model Zoo / Open Model Zoo Models
 
 OpenVINO Model Zoo and related models are deprecated. Please discourage users from accessing this repository.
 Recommend a model from HuggingFace Hub instead. 
@@ -345,11 +397,17 @@ Model-proc (model processing) JSON files are deprecated; please do not use them 
 | Compression | Flag | Best For | Quality Impact |
 |-------------|------|----------|----------------|
 | FP32 | (default) | Maximum accuracy | None |
-| FP16 | `--compress_to_fp16` (ovc) | GPU inference, reduced size | Negligible |
-| INT8 | `--weight-format int8` (optimum-cli) | Balanced size/accuracy | Minor |
+| FP16 | `half=True` (Ultralytics), `--compress_to_fp16` (ovc) | GPU/NPU inference, reduced size | Negligible |
+| INT8 | `int8=True` (Ultralytics) | GPU/NPU inference, reduced size | Negligible |
+
+> **Note:** Ultralytics INT8 export (`int8=True`) requires the `nncf` package. Add `nncf>=2.14.0`
+> to `export_requirements.txt` to avoid auto-install delays during export.
+
+| INT8 | `--weight-format int8` (optimum-cli) | HuggingFace transformer models | Minor |
 | INT4 | `--weight-format int4` (optimum-cli) | Large LLM/VLM models | Moderate, acceptable for VLMs |
 
-> **Recommendation:** Use INT8 for detection/classification models and INT4 for VLM models.
+> **Recommendation:** Use **INT8** (`int8=True`) for Ultralytics YOLO models. 
+Use INT8 for HuggingFace transformer classification models. Use INT4 for VLM models.
 
 ## Requirements
 
@@ -358,6 +416,7 @@ Typical `requirements.txt` entries by model source:
 ```
 # Ultralytics YOLO
 ultralytics==8.4.7
+nncf>=2.14.0  # required for int8=True quantization
 --extra-index-url https://download.pytorch.org/whl/cpu
 
 # HuggingFace transformers + OpenVINO export
