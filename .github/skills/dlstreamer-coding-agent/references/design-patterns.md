@@ -1,9 +1,5 @@
 # Design Patterns Reference
 
-<<<<<<< HEAD
-Patterns extracted from existing DL Streamer Python sample apps. Each pattern includes
-the canonical source file to read for the latest API usage.
-=======
 Patterns initially extracted from existing DLStreamer Python sample apps
 and augmented later with learnings from using DLStreamer Coding Agent.
 Patterns inlcude references to canonical source file to read when applicable.
@@ -27,7 +23,6 @@ Map the user's description to one or more of these patterns:
 | 10v | **Multi-Stream Compositor** | User wants to merge multiple streams into a single composite mosaic view (Pattern 10 variant) |
 | 11 | **Separate Model Download Script** | User references HuggingFace, Ultralytics, or optimum-cli models requiring a dedicated export step |
 | 12 | **Pipeline Event Loop** | Always — every app needs a bus loop for EOS/ERROR handling; includes optional SIGINT handler, input looping, and stdin command control |
->>>>>>> origin/main
 
 ---
 
