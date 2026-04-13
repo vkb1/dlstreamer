@@ -468,9 +468,9 @@ docker run -it --rm \
     -u "$(id -u):$(id -g)" \
     -v "$(pwd)":/app -w /app \
     --device /dev/dri \
-    --group-add $(stat -c "%g" /dev/dri/render*) \
+    --group-add $(stat -c "%g" /dev/dri/render* | head -n1) \
     --device /dev/accel \
-    --group-add $(stat -c "%g" /dev/accel/accel*) \
+    --group-add $(stat -c "%g" /dev/accel/accel* | head -n1) \
     <DOCKER_IMAGE> \
     python3 <app_name>.py
 ```
