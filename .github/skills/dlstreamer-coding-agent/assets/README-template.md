@@ -2,7 +2,8 @@
 
 {{APP_DESCRIPTION}}
 
-![{{APP_TITLE}}]({{APP_IMAGE}})
+<!-- Optional: Include a screenshot from the output video. Omit this line if no image is available. -->
+<!-- ![{{APP_TITLE}}]({{APP_IMAGE}}) -->
 
 {{DETAILED_DESCRIPTION}}
 
@@ -53,17 +54,18 @@ pip install -r export_requirements.txt -r requirements.txt
 ## Supported Hardware
 
 {{HARDWARE_TABLE}}
-<!-- Replace with the platforms this sample supports. Example:
+<!-- Generate this table from the user's `Intel Platform` questionnaire answer.
+     Look up the selected platform(s) in the **Canonical Intel Platform Reference** table
+     in SKILL.md § Section 3 and emit only the matching rows.
 
-| Platform | Accelerators | Recommended Device Args |
-|----------|-------------|------------------------|
-| Intel® Core™ Ultra (Meteor Lake) | CPU, GPU, NPU | `--device GPU` (default) |
-| Intel® Core™ Ultra (Lunar Lake) | CPU, GPU, NPU | `--device GPU` or `--device NPU` for classification |
-| Intel® Core™ Ultra (Panther Lake) | CPU, Xe3 GPU, NPU 5 | `--device GPU` (default) |
-| Intel® Xeon® | CPU | `--device CPU --batch-size 8` |
-| Intel® Arc™ A-Series | CPU, Discrete GPU | `--device GPU --batch-size 8` |
+     Output format:
 
-The application auto-detects available accelerators and falls back to CPU if GPU/NPU is not present.
+     | Platform | Accelerators | Recommended Device Args |
+     |----------|-------------|------------------------|
+     | (Marketing Name from canonical table) | (Accelerators) | (Recommended Device Args) |
+
+     Append this line after the table:
+     The application auto-detects available accelerators and falls back to CPU if GPU/NPU is not present.
 -->
 
 ## Model Preparation

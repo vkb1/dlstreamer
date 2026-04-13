@@ -4,14 +4,10 @@ Map Intel hardware platforms to optimal DL Streamer inference device settings an
 
 ## Intel Platform Identification
 
-| Marketing Name | Code Name | Accelerators |
-|----------------|-----------|--------------|
-| Intel® Core™ Ultra Series 3 | Panther Lake | CPU, GPU (Xe3/Battlemage), NPU |
-| Intel® Core™ Ultra Series 2 | Arrow Lake | CPU, GPU (Arc), NPU |
-| Intel® Core™ Ultra Series 2 | Lunar Lake | CPU, GPU (Arc), NPU |
-| Intel® Core™ Ultra Series 1 | Meteor Lake | CPU, GPU (Arc), NPU |
-| Intel® Core™ (12th–14th Gen) | Alder Lake / Raptor Lake / Raptor Lake Refresh | CPU, GPU (Iris Xe) |
-| Intel® Xeon® 6 (Granite Rapids) | Granite Rapids | CPU, AMX |
+> **Single source of truth:** The canonical Intel platform list is defined in
+> **SKILL.md → Section 3 → Canonical Intel Platform Reference** table.
+> Refer to that table for marketing names, code names, accelerators, and
+> recommended device arguments. Do not duplicate the platform list here.
 
 > **Note:** NPU availability depends on the specific SKU. Not all SKUs within a family have NPU.
 > Verify with `ls /dev/accel/accel*` on the host system.
@@ -96,7 +92,10 @@ os.environ["OMP_NUM_THREADS"] = str(num_p_cores)
 
 ## Platform-Specific Pipeline Adjustments
 
-### Intel Core Ultra with NPU (Meteor Lake, Lunar Lake, Panther Lake)
+### Intel Core Ultra with NPU
+
+> Applies to: Intel Core Ultra (Meteor Lake), Intel Core Ultra (Lunar Lake / Arrow Lake),
+> Intel Core Ultra (Panther Lake) — see canonical platform table in SKILL.md § Section 3.
 
 ```
 # Leverage NPU for always-on classification while GPU handles detection
