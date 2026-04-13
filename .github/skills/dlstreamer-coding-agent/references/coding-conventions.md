@@ -149,12 +149,27 @@ Check for GPU/NPU availability before constructing the pipeline. Use the fallbac
 chain NPU → GPU → CPU so the app works on any Intel system:
 
 ```python
-import signal
+import os
 
-def _sigint_handler(signum, frame):
-    pipeline.send_event(Gst.Event.new_eos())
+def detect_devices():
+    """Detect available Intel accelerators on the system."""
+    devices = {"CPU"}
 
-signal.signal(signal.SIGINT, _sigint_handler)
+    if any(os.path.exists(f"/dev/dri/renderD{128 + i}") for i in range(16)):
+        devices.add("GPU")
+
+    if any(os.path.exists(f"/dev/accel/accel{i}") for i in range(8)):
+        devices.add("NPU")
+
+    return devices
+
+available = detect_devices()
+if "NPU" in available:
+    device = "NPU"
+elif "GPU" in available:
+    device = "GPU"
+else:
+    device = "CPU"
 ```
 
 ## GPU/NPU Availability Check

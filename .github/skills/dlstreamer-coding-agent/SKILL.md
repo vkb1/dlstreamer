@@ -426,7 +426,6 @@ If the user asks for a command-line application, construct a `gst-launch-1.0` pi
 If the user asks for a Python application or wants to add custom logic as new Python elements, decompose the requested pipeline into one or more of the design patterns listed in the [Design Patterns Reference](./references/design-patterns.md). This will guide the structure of the application, including how to construct the pipeline, where to add callbacks, and how to handle models and metadata.
 
 Map the user's description to one or more patterns using the [Pattern Selection Table](./references/design-patterns.md#pattern-selection-table) in the Design Patterns Reference.
->>>>>>> origin/main
 
 Read the [Coding Conventions Reference](./references/coding-conventions.md) before writing a Python application.
 Use the [Application Template](./assets/python-app-template.py) as a starting skeleton.

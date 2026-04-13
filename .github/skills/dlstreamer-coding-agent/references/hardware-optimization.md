@@ -104,7 +104,7 @@ gvaclassify model=classify.xml device=NPU batch-size=1 ! queue !
 ```
 
 Docker requirements: mount `/dev/dri` (GPU) **and** `/dev/accel` (NPU), plus `--group-add` for
-render and accel groups. See the canonical Docker run command in **SKILL.md → Step 4**.
+render and accel groups. See the canonical Docker run command in **SKILL.md → Step 6**.
 
 ### Intel Xeon (Server / Edge Server)
 
