@@ -181,7 +181,6 @@ def main():
     Path(args.output_video).parent.mkdir(parents=True, exist_ok=True)
     Path(args.output_json).parent.mkdir(parents=True, exist_ok=True)
 
-<<<<<<< HEAD
     # Device validation and fallback
     available = detect_devices()
     device = args.device
@@ -194,10 +193,6 @@ def main():
     batch_size = args.batch_size
     if batch_size == 0:
         batch_size = {"GPU": 4, "NPU": 1, "CPU": 2}.get(device, 2)
-=======
-    # Device fallback
-    device = check_device(args.device, "inference")
->>>>>>> origin/main
 
     # Build and run pipeline
     Gst.init(None)
