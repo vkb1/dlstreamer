@@ -470,11 +470,12 @@ docker run -it --rm \
     --group-add $(stat -c "%g" /dev/dri/render* | head -n1) \
     --device /dev/accel \
     --group-add $(stat -c "%g" /dev/accel/accel* | head -n1) \
+    -e ZE_ENABLE_ALT_DRIVERS=libze_intel_npu.so \
     <DOCKER_IMAGE> \
     python3 <app_name>.py
 ```
 
-Omit the `--device /dev/accel` and its `--group-add` line when NPU is not available on the host.
+Omit the `--device /dev/accel`, its `--group-add` line, and `ZE_ENABLE_ALT_DRIVERS` when NPU is not available on the host.
 
 Once the environment is set up, update instructions in generated README.md file and verify the application runs correctly when following instructions. If the user provided a natural language description of the expected output, verify that the output matches the description (e.g. check that JSONL files have the expected fields, check that video outputs have the expected overlays, etc.).
 
