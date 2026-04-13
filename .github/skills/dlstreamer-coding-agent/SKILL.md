@@ -67,12 +67,17 @@ If the user does not have specific models in mind, try to infer the most likely 
 
 ### Step 2 — Identify Models and Start Environment Setup (early, async)
 
-> **Parallelization rule:** Steps 2, 3, and 4 overlap. The venv creation and `pip install`
-> from Step 2 are **network-bound** and take minutes but require **no reasoning**. Start
-> them in an **async terminal** immediately after creating the requirements file, then
-> continue with Steps 3 and 4 (Docker check + pipeline design) while the install runs
-> in the background. Come back to run the actual model export in Step 2b only after
-> `pip install` has finished.
+> **Parallelization rule:** Steps 2 and 4 overlap. Three network-bound tasks require
+> **no reasoning** and should all start in **parallel async terminals** as soon as possible:
+>
+> 1. **venv + pip install** — immediately after writing `export_requirements.txt`
+> 2. **Docker pull** — immediately after the user selects an image in Step 0 Section 6
+> 3. **Video download** (optional) — if the input video is an HTTP URL
+>
+> Start all applicable tasks in async terminals, then continue with Step 4
+> (pipeline design + code generation) while they run in the background.
+> Come back to run the actual model export in Step 2b only after `pip install`
+> has finished.
 
 **2a — Create export scripts and kick off venv + pip install**
 
@@ -105,11 +110,20 @@ pip install -r export_requirements.txt
 > filters that hide progress. Let the full output stream to the terminal so the user can
 > see download/install progress and is not left waiting with no feedback.
 
-Now **proceed immediately** to Steps 3 and 4 while `pip install` runs.
+**At the same time**, start the Docker image pull in a **second async terminal**
+using the image the user selected in Step 0 Section 6:
+
+```bash
+# Run in async mode — do NOT wait for completion
+docker pull <DOCKER_IMAGE>
+```
+
+Now **proceed immediately** to Step 4 while both `pip install` and `docker pull`
+run in the background.
 
 **2b — Run model export (after pip install completes)**
 
-After Steps 3 and 4 are done (or earlier, if `pip install` finished), check the async
+After Step 4 is done (or earlier, if `pip install` finished), check the async
 terminal output to confirm all dependencies were installed successfully, then run the
 model export:
 
@@ -118,31 +132,18 @@ source .<app_name>-export-venv/bin/activate
 python3 export_models.py  # or bash export_models.sh
 ```
 
-### Step 3 — Check and Setup Deployment Environment
+### Step 3 — (Skipped — Docker Image Selected in Questionnaire)
 
-Check if the user's machine has DLStreamer installed:
-```bash
-gst-inspect-1.0 gvadetect 2>&1 | grep Version
-```
-
-The command should return plugin details. If it does, check if the plugin version matches the latest official release of DLStreamer.
-
-If the plugin is not found, or the version is older than the latest release, download the latest weekly DLStreamer docker image.
-
-**Discovering the latest Docker tag:**
-```bash
-# Check already-pulled images:
-docker images | grep dlstreamer
-
-# If no local image exists, browse available tags at:
-# https://hub.docker.com/r/intel/dlstreamer/tags?name=weekly-ubuntu24
-# Then pull a specific tag, e.g.:
-docker pull intel/dlstreamer:2026.1.0-20260407-weekly-ubuntu24
-```
-
-***Important*** — While the DLStreamer Coding Agent is still in preview, ALWAYS download the latest weekly build even if the user has the latest official version of DLStreamer installed, as the latest weekly build may contain important bug fixes and improvements that are not yet in the official release.
+When the user selected a Docker image in Step 0 Section 6, **skip all host
+environment checks**. Do **not** run `gst-inspect-1.0` or `docker images` — the
+Docker pull was already started in parallel in Step 2a.
 
 Recommended workflow: develop the application locally on your host machine and prepare/export models using a Python virtual environment. Once models are exported to OpenVINO IR format, run the application inside the DLStreamer container with your local directory mounted. This approach maintains development flexibility while leveraging the container for consistent runtime execution.
+
+> **Note:** If the user did *not* select a Docker image (e.g. they have DLStreamer
+> installed natively), then check the host installation with
+> `gst-inspect-1.0 gvadetect 2>&1 | grep Version` and verify it matches the
+> latest release. If not, suggest pulling the latest weekly Docker image.
 
 ### Step 4 — Define DLStreamer Pipeline from User Description
 
@@ -456,13 +457,12 @@ python3 <app_name>.py  # or bash <app_name>.sh
 Recommended workflow: develop the application locally on your host machine and prepare/export models using a Python virtual environment. Once models are exported to OpenVINO IR format, run the application inside the DL Streamer container with your local directory mounted. This approach maintains development flexibility while leveraging the container for consistent runtime execution.
 
 **Running in the DL Streamer container** — use the Docker image the user selected in
-Step 0 Section 6 (`<DOCKER_IMAGE>`, default `intel/dlstreamer:latest`). Always pull first.
+Step 0 Section 6 (`<DOCKER_IMAGE>`, default `intel/dlstreamer:latest`). The image was
+already pulled in parallel during Step 2a — verify it completed before proceeding.
 Mount `/dev/dri` (GPU) and `/dev/accel` (NPU, when present). The container lacks render/accel
 group membership, so add them via `--group-add` + `stat`. Use `-u` to preserve file ownership.
 
 ```bash
-docker pull <DOCKER_IMAGE>
-
 docker run -it --rm \
     -u "$(id -u):$(id -g)" \
     -v "$(pwd)":/app -w /app \
