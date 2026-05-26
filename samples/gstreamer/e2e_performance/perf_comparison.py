@@ -12,6 +12,7 @@ import argparse
 import statistics
 import time
 import urllib.request
+import urllib.parse
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -83,9 +84,15 @@ def prepare_video() -> Path:
     """Download test video if not cached."""
     if VIDEO_PATH.exists():
         return VIDEO_PATH
+
+    parsed = urllib.parse.urlparse(VIDEO_URL)
+    if parsed.scheme != 'https' or parsed.hostname != 'storage.openvinotoolkit.org':
+        raise ValueError(f"Unexpected video URL: {VIDEO_URL}")
+
     VIDEO_PATH.parent.mkdir(parents=True, exist_ok=True)
     print("Downloading test video ...")
-    urllib.request.urlretrieve(VIDEO_URL, VIDEO_PATH)
+    # fixed sample asset from storage.openvinotoolkit.org.
+    urllib.request.urlretrieve(VIDEO_URL, VIDEO_PATH)  # nosec B310
     return VIDEO_PATH
 
 

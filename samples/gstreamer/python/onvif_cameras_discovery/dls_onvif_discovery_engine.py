@@ -19,7 +19,7 @@ import socket
 import threading
 import time
 import uuid
-import xml.etree.ElementTree as ET
+from defusedxml import ElementTree as ET
 from typing import Any, AsyncIterator, Iterator, List, Optional
 from urllib.parse import urlparse
 
@@ -75,7 +75,7 @@ def extract_xaddrs(xml_string):
     """Find XAddrs in ONVIF discovery response"""
 
     try:
-        # Parse XML
+        # use defusedxml because discovery responses come from the local network.
         root = ET.fromstring(xml_string)
 
         # Namespace for wsdd
