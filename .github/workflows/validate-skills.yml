@@ -1,0 +1,47 @@
+name: Validate Skills
+on:
+  pull_request:
+    paths:
+      - ".github/skills/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install skill-validator
+        run: brew install agent-ecosystem/tap/skill-validator
+
+      - name: Validate published skills (strict)
+        run: |
+          skill-validator check \
+            --strict \
+            --emit-annotations \
+            --allow-dirs=evals,benchmark \
+            .github/skills/
+          skill-validator check \
+            --strict \
+            --allow-dirs=evals,benchmark \
+            -o markdown \
+            .github/skills/ >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Validate draft skills (non-blocking)
+        run: |
+          skill-validator check \
+            --emit-annotations \
+            --allow-dirs=evals,benchmark \
+            .github/skills/drafts/
+
+      - name: Security scan skills
+        run: |
+          skillspector scan \
+            .github/skills/ \
+            --no-llm \
+            --format sarif \
+            --output security-report.sarif
+
+      - name: Upload SARIF results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: security-report.sarif
