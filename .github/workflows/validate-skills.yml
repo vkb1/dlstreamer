@@ -27,6 +27,7 @@ jobs:
             .github/skills/ >> "$GITHUB_STEP_SUMMARY"
 
       - name: Validate draft skills (non-blocking)
+        continue-on-error: true
         run: |
           skill-validator check \
             --emit-annotations \
@@ -42,6 +43,7 @@ jobs:
             --output security-report.sarif
 
       - name: Upload SARIF results
+        if: always()
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: security-report.sarif
