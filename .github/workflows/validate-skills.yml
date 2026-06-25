@@ -11,8 +11,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Install skill-validator and skillspector
-        run: pip install skill-validator skillspector
+        run: |
+          # skill-validator is not published to PyPI; install from the
+          # agent-ecosystem distribution channel when it becomes available.
+          pip install skill-validator
+          # skillspector v2.3.7 — pinned to latest release commit SHA.
+          pip install "skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@ab0431ff2a9e9d75ba866f986be17f8600cfd086"
 
       - name: Validate published skills (strict)
         run: |
