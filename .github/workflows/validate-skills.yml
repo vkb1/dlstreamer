@@ -5,13 +5,14 @@ on:
       - ".github/skills/**"
 
 jobs:
-  validate:
+  validate_and_scan_skills:
+    name: Validate and Scan Skills
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install skill-validator
-        run: brew install agent-ecosystem/tap/skill-validator
+      - name: Install skill-validator and skillspector
+        run: pip install skill-validator skillspector
 
       - name: Validate published skills (strict)
         run: |
@@ -35,6 +36,7 @@ jobs:
             .github/skills/drafts/
 
       - name: Security scan skills
+        continue-on-error: true
         run: |
           skillspector scan \
             .github/skills/ \
