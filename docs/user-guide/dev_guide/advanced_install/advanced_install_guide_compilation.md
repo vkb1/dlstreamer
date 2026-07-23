@@ -97,7 +97,7 @@ packages:
 
   ```bash
   cd ~
-  git clone --recursive https://github.com/open-edge-platform/dlstreamer.git
+  git clone --branch main --recursive https://github.com/open-edge-platform/dlstreamer.git
   cd dlstreamer
   ```
 
@@ -136,13 +136,13 @@ packages:
 <!--hide_directive:sync: tab2hide_directive-->
 
   ```bash
-  wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.1/linux/openvino_toolkit_ubuntu24_2026.1.0.21367.63e31528c62_x86_64.tgz
-  tar -xvzf openvino_toolkit_ubuntu24_2026.1.0.21367.63e31528c62_x86_64.tgz
-  sudo mv openvino_toolkit_ubuntu24_2026.1.0.21367.63e31528c62_x86_64.tgz /opt/intel/openvino_2026.1.0
-  cd /opt/intel/openvino_2026.1.0/
+  wget https://storage.openvinotoolkit.org/repositories/openvino/packages/2026.2/linux/openvino_toolkit_ubuntu24_2026.2.0.21903.52ddc073857_x86_64.tgz
+  tar -xvzf openvino_toolkit_ubuntu24_2026.2.0.21903.52ddc073857_x86_64.tgz
+  sudo mv openvino_toolkit_ubuntu24_2026.2.0.21903.52ddc073857_x86_64 /opt/intel/openvino_2026.2.0
+  cd /opt/intel/openvino_2026.2.0/
   sudo -E python3 -m pip install -r ./python/requirements.txt
   cd /opt/intel
-  sudo ln -s openvino_2026.1.0 openvino_2026
+  sudo ln -s openvino_2026.2.0 openvino_2026
   ```
 
 <!--hide_directive:::
@@ -158,8 +158,8 @@ you need to install the [OpenVINO GenAI archive](https://docs.openvino.ai/2026/g
 <!--hide_directive:sync: tab1hide_directive-->
 
   ```bash
-  wget -O- https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/2026.1/linux/openvino_genai_ubuntu24_2026.1.0.0_x86_64.tar.gz | tar -xz &&
-  sudo mv openvino_genai_ubuntu24_2026.1.0.0_x86_64 /opt/intel/openvino_genai
+  wget -O- https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/2026.2/linux/openvino_genai_ubuntu24_2026.2.0.0_x86_64.tar.gz | tar -xz &&
+  sudo mv openvino_genai_ubuntu24_2026.2.0.0_x86_64 /opt/intel/openvino_genai
   source /opt/intel/openvino_genai/setupvars.sh
   ```
 
@@ -168,8 +168,8 @@ you need to install the [OpenVINO GenAI archive](https://docs.openvino.ai/2026/g
 <!--hide_directive:sync: tab2hide_directive-->
 
   ```bash
-  wget -O- https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/2026.1/linux/openvino_genai_ubuntu22_2026.1.0.0_x86_64.tar.gz | tar -xz &&
-  sudo mv openvino_genai_ubuntu22_2026.1.0.0_x86_64 /opt/intel/openvino_genai
+  wget -O- https://storage.openvinotoolkit.org/repositories/openvino_genai/packages/2026.2/linux/openvino_genai_ubuntu22_2026.2.0.0_x86_64.tar.gz | tar -xz &&
+  sudo mv openvino_genai_ubuntu22_2026.2.0.0_x86_64 /opt/intel/openvino_genai
   source /opt/intel/openvino_genai/setupvars.sh
   ```
 
@@ -271,6 +271,7 @@ If you intend to use Python elements or samples, you need to install the
 necessary dependencies using the following commands:
 
   ```bash
+  sudo apt-get update 
   sudo apt-get install -y -q --no-install-recommends gcc cmake python3-full python-gi-dev python3-dev python3-pip \
       libglib2.0-dev libcairo2-dev libopencv-objdetect-dev libopencv-photo-dev libopencv-stitching-dev libopencv-video-dev \
       libopencv-calib3d-dev libopencv-core-dev libopencv-dnn-dev libgirepository1.0-dev

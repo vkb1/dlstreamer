@@ -14,10 +14,18 @@ Currently the DLS Optimizer focuses mainly on DL Streamer elements, specifically
 Multi-stream pipelines (those utilizing the `tee` element) are also currently not supported.
 
 ## Prerequisites
-Before using the DLS Optimizer, ensure you have the OpenVINO Python module installed.
-You can install it by running the following command:
+Before using the DLS Optimizer, ensure you have: 
+- Installed DL Streamer [intallation steps.](../get_started/install/install_guide_ubuntu.md)
+- Installed any necessary [DLStreamer python dependencies.](./advanced_install/advanced_install_guide_compilation.html#step-10-install-python-dependencies-optional) 
+- Configured environment variables for the current terminal session.
+- Installed the OpenVINO python library.
+
 ```bash
-pip install openvino
+   python3 -m venv ~/python3venv
+   source ~/python3venv/bin/activate
+   source /opt/intel/dlstreamer/scripts/setup_dls_env.sh
+   cd /opt/intel/dlstreamer/scripts/optimizer
+   pip install openvino==2026.2
 ```
 
 ## Using the optimizer as a tool
@@ -116,7 +124,7 @@ Provide a path representing a file which will be used to save results informatio
 ## Pausing and resuming
 While the optimizer is running, you can pause and resume the search at any time by pressing the **Spacebar** in the terminal where the tool is running.
 
-**Pausing** stops the current pipeline sample mid-run and suspends the search loop. The optimizer will not start any new pipeline test until it is resumed. **Resuming** (pressing Space again) restarts the search from the same point it was paused. The remaining **search duration** is preserved accurately: time spent while paused is not counted against the budget.
+**Pausing** stops the current pipeline sample mid-run and suspends the search loop. The optimizer will not start any new pipeline test until it is resumed. **Resuming** (pressing Space again) continues to loop through the candidates starting from the next one. The remaining **search duration** is preserved accurately: time spent while paused is not counted against the budget.
 
 >**Note**\
 >The pause key is only active while the optimizer is running as a CLI tool in terminal with keyboard input available. It is not available in non-interactive or piped environments.
@@ -168,31 +176,41 @@ Initialized without any arguments
 ```
 optimizer = DLSOptimizer()
 ```
+
+#### Result dictionary
+
+Methods that measure or optimize pipelines return a **result dictionary** with the following keys:
+
+| Key | Type | Description | Present in |
+|-----|------|-------------|------------|
+| `fps` | `float` | Measured frames per second | All results |
+| `streams` | `int` | Number of concurrent streams tested | Stream-optimization results only |
+
 #### Methods
-**`get_baseline_pipeline() -> pipeline, fps, streams`**
+**`get_baseline_pipeline() -> pipeline, result`**
 - `pipeline: string` - The baseline pipeline from which optimization started.
-- `fps: float` - Fps measured for the baseline pipeline.
-- `streams: int` - Number of streams in the baseline pipeline.
+- `result: dict` - Result dictionary (see above).
 
 Returns information about the original pipeline used in the optimization process. Returned values are meaningless until at least one optimization operation is performed.
 ```
 optimizer = DLSOptimizer()
 for (_, _) in optimizer.iter_optimize_for_fps(pipeline):
     pass
-pipeline, fps, streams = optimizer.get_baseline_pipeline()
+pipeline, result = optimizer.get_baseline_pipeline()
+print(f"Baseline FPS: {result['fps']}")
 ```
 ---
-**`get_optimal_pipeline() -> pipeline, fps, streams`**
+**`get_optimal_pipeline() -> pipeline, result`**
 - `pipeline: string` - The best pipeline found during optimization.
-- `fps: float` - Fps measured for the optimal pipeline.
-- `streams: int` - Number of streams in the optimal pipeline.
+- `result: dict` - Result dictionary (see above).
 
 Returns information about the best pipeline found during the optimization process. Returned values are meaningless until at least one optimization operation is performed.
 ```
 optimizer = DLSOptimizer()
 for (_, _) in optimizer.iter_optimize_for_streams(pipeline):
     pass
-best_pipeline, best_fps, best_streams = optimizer.get_optimal_pipeline()
+best_pipeline, result = optimizer.get_optimal_pipeline()
+print(f"Best FPS: {result['fps']}, Streams: {result['streams']}")
 ```
 ---
 **`set_sample_duration(duration)`**
@@ -240,77 +258,83 @@ optimizer = DLSOptimizer()
 optimizer.set_allowed_devices(["CPU", "GPU"])
 ```
 ---
-**`optimize_for_fps(pipeline, search_duration) -> optimized_pipeline, fps`**
+**`optimize_for_fps(pipeline, search_duration) -> optimized_pipeline, result`**
 - `pipeline: string` - A string containing a valid DL Streamer pipeline.
 - `search_duration: int` - The duration of searching for better pipelines, default `300`.
 - `optimized_pipeline: string` - A string containing the best performing pipeline that has been found during the search.
-- `fps: float` - The measured fps of the best perfmorming pipeline.
+- `result: dict` - Result dictionary (see above).
 
 Runs a series of optimization steps on the pipeline searching for a version with better performance measured by fps.
 ```
 pipeline = "urisourcebin buffer-size=4096 uri=https://videos.pexels.com/video-files/1192116/1192116-sd_640_360_30fps.mp4 ! decodebin ! gvadetect model=/home/optimizer/models/public/yolo11s/INT8/yolo11s.xml ! queue ! gvawatermark ! fakesink"
 optimizer = DLSOptimizer()
-optimizer.optimize_for_fps(pipeline)
+optimized_pipeline, result = optimizer.optimize_for_fps(pipeline)
+print(f"Best pipeline: {optimized_pipeline} @ {result['fps']} fps")
 ```
 ---
-**`iter_optimize_for_fps(pipeline) -> optimized_pipeline, fps`**
+**`iter_optimize_for_fps(pipeline) -> optimized_pipeline, result`**
 - `pipeline: string` - A string containing a valid DL Streamer pipeline.
 - `optimized_pipeline: string` - A string containing a candidate pipeline that has been tested.
-- `fps: float` - The measured fps of the candidate pipeline.
+- `result: dict | None` - Result dictionary (see above), or `None` if the candidate failed validation.
 
 Runs a series of optimization steps on the pipeline searching for version with better performance measured by fps. Returns each and every candidate pipeline that has been considered.
 ```
 pipeline = "urisourcebin buffer-size=4096 uri=https://videos.pexels.com/video-files/1192116/1192116-sd_640_360_30fps.mp4 ! decodebin ! gvadetect model=/home/optimizer/models/public/yolo11s/INT8/yolo11s.xml ! queue ! gvawatermark ! fakesink"
 optimizer = DLSOptimizer()
-for (pipeline, fps) in optimizer.iter_optimize_for_fps(pipeline):
-    print(f"Tested: {pipeline} @ {fps}")
-best_pipeline, best_fps, _ = optimizer.get_optimal_pipeline()
-print(f"Optimal pipeline: {best_pipeline} @ {best_fps}")
+for (pipeline, result) in optimizer.iter_optimize_for_fps(pipeline):
+    if result:
+        print(f"Tested: {pipeline} @ {result['fps']}")
+    else:
+        print(f"Failed: {pipeline}")
+best_pipeline, best_result = optimizer.get_optimal_pipeline()
+print(f"Optimal pipeline: {best_pipeline} @ {best_result['fps']}")
 ```
 ---
-**`optimize_for_streams(pipeline, search_duration) -> optimized_pipeline, fps, streams`**
+**`optimize_for_streams(pipeline, search_duration) -> optimized_pipeline, result`**
 - `pipeline: string` - A string containing a valid DL Streamer pipeline.
 - `search_duration: int` - The duration of searching for better pipelines, default `300`.
 - `optimized_pipeline: string` - A string containing the best performing pipeline that has been found during the search.
-- `fps: float` - The measured fps of the best perfmorming pipeline.
-- `streams: int` - The number of streams capable of running above the fps limit with the optimized pipeline.
+- `result: dict` - Result dictionary (see above). Includes `streams` key.
 
 Searching for a version of the input pipeline which can support the highest number of concurrent streams.
 ```
 pipeline = "urisourcebin buffer-size=4096 uri=https://videos.pexels.com/video-files/1192116/1192116-sd_640_360_30fps.mp4 ! decodebin ! gvadetect model=/home/optimizer/models/public/yolo11s/INT8/yolo11s.xml ! queue ! gvawatermark ! fakesink"
 optimizer = DLSOptimizer()
-optimizer.optimize_for_streams(pipeline)
+optimized_pipeline, result = optimizer.optimize_for_streams(pipeline)
+print(f"Best pipeline: {optimized_pipeline} @ {result['streams']} streams, {result['fps']} fps")
 ```
 ---
-**`iter_optimize_for_streams(pipeline) -> candidate_pipeline, fps, streams`**
+**`iter_optimize_for_streams(pipeline) -> candidate_pipeline, result`**
 - `pipeline: string` - A string containing a valid DL Streamer pipeline.
 - `optimized_pipeline: string` - A string containing a candidate pipeline that has been tested.
-- `fps: float` - The measured fps of the candidate pipeline.
-- `streams: int` - The number of streams capable of running above the fps limit with the candidate pipeline.
+- `result: dict | None` - Result dictionary (see above) including `streams` key, or `None` if the candidate failed validation.
 
 Searching for a version of the input pipeline which can support the highest number of concurrent streams. Returns each and every candidate pipeline that has been considered.
 ```
 pipeline = "urisourcebin buffer-size=4096 uri=https://videos.pexels.com/video-files/1192116/1192116-sd_640_360_30fps.mp4 ! decodebin ! gvadetect model=/home/optimizer/models/public/yolo11s/INT8/yolo11s.xml ! queue ! gvawatermark ! fakesink"
 optimizer = DLSOptimizer()
-for (pipeline, fps, streams) in optimizer.iter_optimize_for_streams(pipeline):
-    print(f"Tested: {pipeline} @ {streams} & {fps}")
-best_pipeline, best_fps, best_streams = optimizer.get_optimal_pipeline()
-print(f"Optimal pipeline: {best_pipeline} @ {best_streams} & {best_fps}")
+for (pipeline, result) in optimizer.iter_optimize_for_streams(pipeline):
+    if result:
+        print(f"Tested: {pipeline} @ {result['streams']} streams & {result['fps']} fps")
+    else:
+        print(f"Failed: {pipeline}")
+best_pipeline, best_result = optimizer.get_optimal_pipeline()
+print(f"Optimal pipeline: {best_pipeline} @ {best_result['streams']} streams & {best_result['fps']} fps")
 ```
 ---
 
 **Example:**
 
 ```python
-from optimizer import get_optimized_pipeline
+from optimizer import DLSOptimizer
 
 pipeline = "urisourcebin buffer-size=4096 uri=https://videos.pexels.com/video-files/1192116/1192116-sd_640_360_30fps.mp4 ! decodebin ! gvadetect model=/home/optimizer/models/public/yolo11s/INT8/yolo11s.xml ! queue ! gvawatermark ! fakesink"
 
 optimizer = DLSOptimizer()
 optimizer.set_sample_duration(15)
-optimized_pipeline, fps = optimizer.optimize_for_fps(pipeline, search_duration = 600)
+optimized_pipeline, result = optimizer.optimize_for_fps(pipeline, search_duration = 600)
 print("Best discovered pipeline: " + optimized_pipeline)
-print("Measured fps: " + fps)
+print("Measured fps: " + str(result["fps"]))
 ```
 
 ## Controling the measurement
